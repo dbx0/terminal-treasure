@@ -1,0 +1,300 @@
+from blessed import Terminal
+from core.user import User
+from core.user import InventoryItem
+from core.memory import GameMemory
+from core.utils import draw_ascii_art, get_next_upgrade_currency, check_memory_file
+from core.utils import print_color_text
+from core.ascii import CHEST
+from core.currency import Currency
+
+class Particle:
+    def __init__(self, x: int, y: int, currency: Currency = None, max_age: int = None, 
+                 symbol: str = None, color: str = None, text: str = None, text_color: str = None):
+        self.x = x
+        self.y = y
+        self.age = 0
+        self.text = text
+        self.text_color = text_color
+        
+        # Support both Currency object and direct parameters
+        if currency:
+            self.currency = currency
+            self.max_age = currency.get_add_rate()
+            self.symbol = currency.get_symbol()
+            self.color = currency.get_color()
+            self.text_color = text_color or currency.get_color()
+        else:
+            self.currency = None
+            self.max_age = max_age or 60
+            self.symbol = symbol or ''
+            self.color = color or 'white'
+            self.text_color = text_color or color or 'white'
+    
+    def update(self):
+        self.age += 1
+        if self.age % 3 == 0:
+            self.y -= 1
+    
+    def is_expired(self) -> bool:
+        return self.age > self.max_age or self.y < 0
+    
+    def get_fade_ratio(self) -> float:
+        return 1 - (self.age / self.max_age)
+    
+    def draw(self, term: Terminal):
+        fade_ratio = self.get_fade_ratio()
+
+        if self.text:
+            # Draw text particle
+            if fade_ratio > 0.66:
+                print_color_text(term, self.text, self.x + 2, self.y, self.text_color, bold=True)
+            elif fade_ratio > 0.33:
+                print_color_text(term, self.text, self.x + 2, self.y, self.text_color)
+            else:
+                print_color_text(term, self.text, self.x + 2, self.y, self.text_color, dim=True)
+        else:
+            # Draw symbol particle
+            if fade_ratio > 0.66:
+                print_color_text(term, self.symbol, self.x + 2, self.y, self.color, bold=True)
+            elif fade_ratio > 0.33:
+                print_color_text(term, self.symbol, self.x + 2, self.y, self.color)
+            else:
+                print_color_text(term, self.symbol, self.x + 2, self.y, self.color, dim=True)
+
+class Game:
+
+    def __init__(self, term: Terminal, debug: bool = False):
+        self.term = term
+        self.game_memory = None
+        self.debug = debug
+        self.show_inventory = True
+
+    def load_game_memory(self):
+        if not check_memory_file():
+            self.game_memory = GameMemory()
+            return
+
+        self.game_memory = GameMemory()
+        self.game_memory.load()
+
+        self.user = self.game_memory.read('user')
+    
+    def _draw_chest(self):
+        x, y = draw_ascii_art(self.term, CHEST, self.term.width // 2, self.term.height // 2, True)
+        return x, y
+
+    def _draw_user_inventory(self, inventory: list[InventoryItem]):
+
+        def get_header(width: int):
+            header = "Inventory"
+            spacing = width - len(header) - 2
+            header = f"|" + "-" * (spacing // 2) + header + "-" * (spacing // 2) + "|"
+            return header
+
+        def get_footer(width: int):
+            footer = "|" + "_" * (width - 2) + "|"
+            return footer
+        
+        inventory_width = 23
+
+        inventory_print_rows = []
+
+        for i, item in enumerate(inventory):
+            item_symbol = item.get_item().get_symbol() if item.get_item() else '-'
+            item_type = item.get_item().get_type().capitalize() if item.get_item() else 'Unknown'
+            item_amount = f"{item.get_amount()}" 
+
+            item_message = f"{item_symbol} {item_amount} {item_type}"
+
+            inventory_print_rows.append(item_message)
+
+            if len(item_message) > inventory_width:
+                inventory_width = len(item_message)
+
+        for i, row in enumerate(inventory_print_rows):
+            spacing = inventory_width - len(row) - 2 
+            inventory_print_rows[i] = f"|" + " " * 2 + row + " " * (spacing - 2) + "|"
+
+        inventory_print_rows.insert(0, get_header(inventory_width))
+        inventory_print_rows.append(get_footer(inventory_width))
+
+        for i, row in enumerate(inventory_print_rows, 1):
+            print_color_text(self.term, row, 0, i, 'white', dim=True)
+
+    def _show_instructions(self):
+        instructions = "Press 'q' to quit. Press 's' to save game."
+        
+        print_color_text(self.term, instructions, (self.term.width - len(instructions)) // 2, self.term.height - 2, 'white', dim=True)
+
+        sell_messsage = f"Press 'm' to get more money. Press 'c' to sell all inventory items."
+        print_color_text(self.term, sell_messsage, (self.term.width - len(sell_messsage)) // 2, self.term.height - 3, 'white', dim=True)
+
+    def _draw_particles(self, particles: dict):
+        particles_to_remove = []
+
+        for pid, particle in particles.items():
+            particle.update()
+            
+            if particle.is_expired():
+                particles_to_remove.append(pid)
+                continue
+            
+            particle.draw(self.term)
+        
+        for pid in particles_to_remove:
+            del particles[pid]
+
+        return particles
+
+    def run(self):
+        user = None    
+
+        if not self.game_memory:
+            user = User()
+            self.game_memory = GameMemory()
+            self.game_memory.write('user', user)
+        else:
+            user = self.game_memory.read('user')
+            if user is None:
+                user = User()
+                self.game_memory.write('user', user)
+
+        money_particles = {}
+        money_particle_id = 0
+        
+        spawn_timer = 0
+        money_timer = []
+        manual_add_timer = user.get_current_currency().get_add_rate()
+
+
+        for item in user.get_inventory():
+            if item.get_type() == 'currency':
+                money_timer.append({
+                    'item': item.get_item().get_type(),
+                    'timer': 0
+                })
+        
+        print(self.term.enter_fullscreen)
+        print(self.term.hidden_cursor)
+        
+        try:
+            frame = 0
+            with self.term.cbreak():  # Input without Enter key
+                while True:
+                    # Clear screen
+                    print(self.term.home + self.term.clear)
+                    
+                    # Draw chest
+                    chest_x, chest_y = self._draw_chest()
+                    
+                    # Update spawn timer
+                    spawn_timer += 1
+                    if spawn_timer >= user.get_current_currency().get_add_rate():
+                        spawn_timer = 0
+                        # Spawn new particle
+                        money_particles[money_particle_id] = Particle(
+                            x=chest_x,
+                            y=chest_y,
+                            currency=user.get_current_currency()
+                        )
+                        money_particle_id += 1
+                    
+                    # Update manual add cooldown timer
+                    manual_add_timer += 1
+                    
+                    money_particles = self._draw_particles(money_particles)
+
+                    for timer in money_timer:
+                        timer['timer'] += 1
+
+                    for item in user.get_inventory():
+                        for timer in money_timer:
+                            item_type = item.get_item().get_type()
+                            if timer['item'] == item_type:
+                                if timer['timer'] >= item.get_item().get_add_rate():
+                                    user.update_item_amount(item_type, 1)
+                                    timer['timer'] = 0
+
+                    self._show_instructions()
+                    if self.show_inventory:
+                        self._draw_user_inventory(user.get_inventory())
+
+                    # Display money
+                    current_money = f"You have {user.get_money_str()} coins"
+
+                    print_color_text(self.term, current_money, self.term.width // 2 - len(current_money) // 2, self.term.height // 2 + 2, 'white', bold=True)
+
+                    next_upgrade_currency = get_next_upgrade_currency(user.get_current_currency())
+                    can_upgrade = False
+                    if next_upgrade_currency:
+                        next_upgrade_currency_name = next_upgrade_currency.get_type().capitalize()
+                        next_upgrade_currency_cost = next_upgrade_currency.get_upgrade_cost()
+
+                        can_upgrade = user.get_money() >= next_upgrade_currency_cost
+                        if can_upgrade:
+                            next_upgrade_message = f"Press 'u' to upgrade to {next_upgrade_currency_name}"
+                            
+                            print_color_text(self.term, next_upgrade_message, self.term.width // 2 - len(next_upgrade_message) // 2 , self.term.height // 2 + 3, 'yellow', bold=True)
+                        
+                    else:
+                        next_upgrade_message = "There are no more upgrades available"
+                        print_color_text(self.term, next_upgrade_message, self.term.width // 2 - len(next_upgrade_message) // 2 , self.term.height // 2 + 2, 'white', dim=True)
+                    
+                    frame += 1
+
+                    # Check for input
+                    key = self.term.inkey(timeout=1/60)  # 60 fps
+                    if key and key.lower() == 'm':
+                        # Ignore cooldown if debug is on
+                        if self.debug or manual_add_timer >= user.get_current_currency().get_add_rate():
+                            add_amount = user.get_current_currency().get_add_amount()
+                            user.add_money(add_amount)
+                            money_particles[money_particle_id] = Particle(
+                                x=chest_x,
+                                y=chest_y,
+                                max_age=60,
+                                text=f"+ {add_amount:,.0f}",
+                                text_color='light_green'
+                            )
+                            money_particle_id += 1
+
+                            self.game_memory.write('user', user)
+                            
+                            # Reset cooldown timer (only if not in debug mode)
+                            if not self.debug:
+                                manual_add_timer = 0
+
+                            money_particles = self._draw_particles(money_particles)
+
+                    elif key and key.lower() == 's':
+                        self.game_memory.write('user', user)
+                        self.game_memory.save()
+
+                    elif key and key.lower() == 'q':
+                        break
+                    elif key and key.lower() == 'i':
+                        self.show_inventory = not self.show_inventory
+                    elif key and key.lower() == 'c':
+                        total_sold = user.sell_all_currency_inventory_items()
+                        if total_sold > 0:
+                            total_str = f"+ {total_sold:,.0f}" if total_sold >= 1 else f"+ {total_sold:,.2f}"
+                            money_particles[money_particle_id] = Particle(
+                                x=chest_x,
+                                y=chest_y,
+                                max_age=60,
+                                text=total_str,
+                                text_color='light_green'
+                            )
+                            money_particle_id += 1
+                        
+                    if key and can_upgrade and key.lower() == 'u':
+                        user.subtract_money(next_upgrade_currency_cost)
+                        user.unlock_new_currency(next_upgrade_currency)
+                        money_timer.append({
+                            'item': next_upgrade_currency.get_type(),
+                            'timer': 0
+                        })
+                        self.game_memory.write('user', user)
+        finally:
+            print(self.term.exit_fullscreen)
+            print(self.term.normal_cursor)

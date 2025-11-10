@@ -2,6 +2,14 @@
 
 A terminal-based idle RPG game.
 
+## Screenshots
+
+### Game Menu
+![Game Menu](images/game_menu.png)
+
+### Gameplay
+![Gameplay](images/gameplay.png)
+
 ## Features
 
 - Terminal-based gameplay using blessed

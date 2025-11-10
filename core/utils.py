@@ -28,7 +28,11 @@ def print_color_text(term: Terminal, text: str, x: int, y: int, color_name: str,
     color_rgb = COLORS_RGB[color_name]
     color = term.color_rgb(*color_rgb)
     if dim:
-        text = term.dim(text)
+        # windows suck
+        try:
+            text = term.dim(text)
+        except Exception:
+            pass
     if bold:
         text = term.bold(text)
     print(term.move_xy(x, y) + color(text) + term.normal)

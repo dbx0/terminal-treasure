@@ -67,8 +67,7 @@ class Menu:
                     credit_text = "a game by dbx0"
                     credit_y = ascii_start_y + len(game_name_lines) + 1
                     credit_x = self.term.width // 2 - len(credit_text) // 2
-                    dim_text = self.term.dim(credit_text)
-                    print(self.term.move_xy(credit_x, credit_y) + dim_text)
+                    print_color_text(self.term, credit_text, credit_x, credit_y, 'light_yellow', dim=True)
                     
                     for i, item in enumerate(menu_items):
                         if not item['enabled']:

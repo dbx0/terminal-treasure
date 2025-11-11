@@ -1,7 +1,7 @@
 from blessed import Terminal
 from core.memory import GameMemory
 from core.utils import check_memory_file
-from core.utils import print_color_text
+from core.utils import print_color_text, move_cursor_off_screen
 from core.ascii import GAME_NAME
 from core.config import COLORS_RGB
 import sys
@@ -85,6 +85,7 @@ class Menu:
                     for line in frame_buffer:
                         print(line, end='', flush=False)
                     sys.stdout.flush()
+                    move_cursor_off_screen(self.term)
                         
                     key = self.term.inkey(timeout=1/60)
                     if not key:

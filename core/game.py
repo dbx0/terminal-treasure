@@ -3,7 +3,7 @@ from core.user import User
 from core.user import InventoryItem
 from core.memory import GameMemory
 from core.utils import draw_ascii_art, get_next_upgrade_currency, check_memory_file
-from core.utils import print_color_text
+from core.utils import print_color_text, move_cursor_off_screen
 from core.ascii import CHEST
 from core.currency import Currency
 import sys
@@ -248,6 +248,7 @@ class Game:
                     for line in frame_buffer:
                         print(line, end='', flush=False)
                     sys.stdout.flush()
+                    move_cursor_off_screen(self.term)
                     
                     frame += 1
 

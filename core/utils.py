@@ -95,3 +95,7 @@ def check_memory_file():
     
     return True
 
+def move_cursor_off_screen(term: Terminal):
+    cursor_move = term.move_xy(term.width + 1, term.height + 1)
+    print(cursor_move, end='', flush=False)
+    sys.stdout.flush()

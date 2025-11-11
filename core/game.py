@@ -5,62 +5,9 @@ from core.memory import GameMemory
 from core.utils import draw_ascii_art, get_next_upgrade_currency, check_memory_file
 from core.utils import print_color_text, move_cursor_off_screen
 from core.ascii import CHEST
-from core.currency import Currency
 import sys
-
-class Particle:
-    def __init__(self, x: int, y: int, currency: Currency = None, max_age: int = None, 
-                 symbol: str = None, color: str = None, text: str = None, text_color: str = None):
-        self.x = x
-        self.y = y
-        self.age = 0
-        self.text = text
-        self.text_color = text_color
-        
-        # Support both Currency object and direct parameters
-        if currency:
-            self.currency = currency
-            self.max_age = currency.get_add_rate()
-            self.symbol = currency.get_symbol()
-            self.color = currency.get_color()
-            self.text_color = text_color or currency.get_color()
-        else:
-            self.currency = None
-            self.max_age = max_age or 60
-            self.symbol = symbol or ''
-            self.color = color or 'white'
-            self.text_color = text_color or color or 'white'
-    
-    def update(self):
-        self.age += 1
-        if self.age % 3 == 0:
-            self.y -= 1
-    
-    def is_expired(self) -> bool:
-        return self.age > self.max_age or self.y < 0
-    
-    def get_fade_ratio(self) -> float:
-        return 1 - (self.age / self.max_age)
-    
-    def draw(self, term: Terminal, buffer: list = None):
-        fade_ratio = self.get_fade_ratio()
-
-        if self.text:
-            # Draw text particle
-            if fade_ratio > 0.66:
-                print_color_text(term, self.text, self.x + 2, self.y, self.text_color, bold=True, buffer=buffer)
-            elif fade_ratio > 0.33:
-                print_color_text(term, self.text, self.x + 2, self.y, self.text_color, buffer=buffer)
-            else:
-                print_color_text(term, self.text, self.x + 2, self.y, self.text_color, dim=True, buffer=buffer)
-        else:
-            # Draw symbol particle
-            if fade_ratio > 0.66:
-                print_color_text(term, self.symbol, self.x + 2, self.y, self.color, bold=True, buffer=buffer)
-            elif fade_ratio > 0.33:
-                print_color_text(term, self.symbol, self.x + 2, self.y, self.color, buffer=buffer)
-            else:
-                print_color_text(term, self.symbol, self.x + 2, self.y, self.color, dim=True, buffer=buffer)
+from core.particle import Particle
+from core.inventory import Inventory
 
 class Game:
 
@@ -84,7 +31,7 @@ class Game:
         x, y = draw_ascii_art(self.term, CHEST, self.term.width // 2, self.term.height // 2, True, buffer=buffer)
         return x, y
 
-    def _draw_user_inventory(self, inventory: list[InventoryItem], buffer: list = None):
+    def _draw_user_inventory(self, inventory: Inventory, buffer: list = None):
 
         def get_header(width: int):
             header = "Inventory"
@@ -168,7 +115,7 @@ class Game:
         manual_add_timer = user.get_current_currency().get_add_rate()
 
 
-        for item in user.get_inventory():
+        for item in user.get_inventory().get_items():
             if item.get_type() == 'currency':
                 money_timer.append({
                     'item': item.get_item().get_type(),
@@ -211,7 +158,7 @@ class Game:
                     for timer in money_timer:
                         timer['timer'] += 1
 
-                    for item in user.get_inventory():
+                    for item in user.get_inventory().get_items():
                         for timer in money_timer:
                             item_type = item.get_item().get_type()
                             if timer['item'] == item_type:
@@ -221,7 +168,7 @@ class Game:
 
                     self._show_instructions(buffer=frame_buffer)
                     if self.show_inventory:
-                        self._draw_user_inventory(user.get_inventory(), buffer=frame_buffer)
+                        self._draw_user_inventory(user.get_inventory().get_items(), buffer=frame_buffer)
 
                     # Display money
                     current_money = f"You have {user.get_money_str()} coins"

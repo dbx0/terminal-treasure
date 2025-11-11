@@ -1,56 +1,15 @@
 from core.currency import Currency
 from core.utils import get_currency_by_order
-
-class InventoryItem:
-    def __init__(self, item: object, amount: int, type: str):
-        self.item = item
-        self.amount = amount
-        self.type = type
-
-    def get_item(self) -> object:
-        return self.item
-
-    def get_amount(self) -> int:
-        return self.amount
-
-    def add_amount(self, amount: int):
-        self.amount += amount
-
-    def subtract_amount(self, amount: int):
-        self.amount -= amount
-
-    def get_type(self) -> str:
-        return self.type
-
-    def to_dict(self) -> dict:
-        result = {
-            'type': self.get_type(),
-            'amount': self.amount
-        }
-        # If the item is a Currency, save its data
-        if self.item and isinstance(self.item, Currency):
-            result['currency'] = self.item.to_dict()
-        return result
-
-    @classmethod
-    def from_dict(cls, data: dict):
-        item = None
-        # If currency data exists, reconstruct the Currency object
-        if 'currency' in data:
-            item = Currency.from_dict(data['currency'])
-        
-        return cls(
-            item=item,
-            amount=data['amount'],
-            type=data['type']
-        )
+from core.inventory import InventoryItem, Inventory
 
 class User:
 
     def __init__(self):
         self.money = 0
-        self.inventory = [InventoryItem(get_currency_by_order(1), 0, 'currency')]
-        self.current_currency = self.inventory[-1].get_item()
+        self.inventory = Inventory()
+        self.current_currency = get_currency_by_order(1)
+        self.inventory.add_item(InventoryItem(self.current_currency, 0, 'currency'))
+
 
     def get_money(self) -> int:
         return self.money
@@ -64,23 +23,23 @@ class User:
     def get_current_currency(self) -> Currency:
         return self.current_currency
 
-    def get_inventory(self) -> list[InventoryItem]:
+    def get_inventory(self) -> Inventory:
         return self.inventory
 
     def set_current_currency(self, currency: Currency):
-        self.inventory.append(InventoryItem(currency, 0, 'currency'))
+        self.inventory.add_item(InventoryItem(currency, 0, 'currency'))
         self.current_currency = currency
 
     def add_new_item(self, item: object):
-        self.inventory.append(InventoryItem(item, 0, item.get_type()))
+        self.inventory.add_item(InventoryItem(item, 0, item.get_type()))
         self.current_currency = item
 
     def unlock_new_currency(self, currency: Currency):
-        self.inventory.append(InventoryItem(currency, 0, 'currency'))
+        self.inventory.add_item(InventoryItem(currency, 0, 'currency'))
         self.current_currency = currency
 
     def update_item_amount(self, item_type: str, amount: int):
-        for item in self.inventory:
+        for item in self.inventory.get_items():
             if item.get_item().get_type() == item_type:
                 item.add_amount(amount)
                 break
@@ -91,7 +50,7 @@ class User:
 
     def sell_all_currency_inventory_items(self):
         total_sold = 0
-        for item in self.inventory:
+        for item in self.inventory.get_items():
             if item.get_type() == 'currency':
                 amount_before = item.get_amount()
                 self.sell_currency_inventory_item(item)
@@ -110,7 +69,7 @@ class User:
     def to_dict(self) -> dict:
         return {
             'money': self.money,
-            'inventory': [item.to_dict() for item in self.inventory],
+            'inventory': [item.to_dict() for item in self.inventory.get_items()],
             'current_currency': self.current_currency.to_dict()
         }
     
@@ -118,6 +77,8 @@ class User:
     def from_dict(cls, data: dict):
         user = cls()
         user.money = data['money']
-        user.inventory = [InventoryItem.from_dict(item) for item in data['inventory']]
+        user.inventory = Inventory()
+        for item in data['inventory']:
+            user.inventory.add_item(InventoryItem.from_dict(item))
         user.current_currency = Currency.from_dict(data['current_currency'])
         return user

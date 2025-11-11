@@ -158,6 +158,7 @@ class Game:
                     for timer in money_timer:
                         timer['timer'] += 1
 
+                    # Increase the item amount for the currency items
                     for item in user.get_inventory().get_items():
                         for timer in money_timer:
                             item_type = item.get_item().get_type()

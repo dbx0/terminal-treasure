@@ -10,17 +10,22 @@ args = parser.parse_args()
 debug = args.debug
 
 if __name__ == '__main__':
-    term = Terminal()
-    menu = Menu(term)
-    menu_result = menu.show()
+    try:
+        term = Terminal()
+        menu = Menu(term)
+        menu_result = menu.show()
 
-    game = None
-    if menu_result == -1:
+        game = None
+        if menu_result == -1:
+            exit()
+        elif menu_result == 0:
+            game = Game(term, debug)
+            game.run()
+        elif menu_result == 1:
+            game = Game(term, debug)
+            game.load_game_memory()
+            game.run()
+    except KeyboardInterrupt:
+        print(term.normal_cursor)
+        print(term.exit_fullscreen)
         exit()
-    elif menu_result == 0:
-        game = Game(term, debug)
-        game.run()
-    elif menu_result == 1:
-        game = Game(term, debug)
-        game.load_game_memory()
-        game.run()

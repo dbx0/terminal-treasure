@@ -189,7 +189,7 @@ class Game:
                         
                     else:
                         next_upgrade_message = "There are no more upgrades available"
-                        print_color_text(self.term, next_upgrade_message, self.term.width // 2 - len(next_upgrade_message) // 2 , self.term.height // 2 + 2, 'white', dim=True, buffer=frame_buffer)
+                        print_color_text(self.term, next_upgrade_message, self.term.width // 2 - len(next_upgrade_message) // 2 , self.term.height // 2 + 2, 'red', dim=True, buffer=frame_buffer)
                     
                     # Flush all buffered output at once
                     for line in frame_buffer:

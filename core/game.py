@@ -6,6 +6,7 @@ from core.utils import draw_ascii_art, get_next_upgrade_currency, check_memory_f
 from core.utils import print_color_text
 from core.ascii import CHEST
 from core.currency import Currency
+import sys
 
 class Particle:
     def __init__(self, x: int, y: int, currency: Currency = None, max_age: int = None, 
@@ -41,25 +42,25 @@ class Particle:
     def get_fade_ratio(self) -> float:
         return 1 - (self.age / self.max_age)
     
-    def draw(self, term: Terminal):
+    def draw(self, term: Terminal, buffer: list = None):
         fade_ratio = self.get_fade_ratio()
 
         if self.text:
             # Draw text particle
             if fade_ratio > 0.66:
-                print_color_text(term, self.text, self.x + 2, self.y, self.text_color, bold=True)
+                print_color_text(term, self.text, self.x + 2, self.y, self.text_color, bold=True, buffer=buffer)
             elif fade_ratio > 0.33:
-                print_color_text(term, self.text, self.x + 2, self.y, self.text_color)
+                print_color_text(term, self.text, self.x + 2, self.y, self.text_color, buffer=buffer)
             else:
-                print_color_text(term, self.text, self.x + 2, self.y, self.text_color, dim=True)
+                print_color_text(term, self.text, self.x + 2, self.y, self.text_color, dim=True, buffer=buffer)
         else:
             # Draw symbol particle
             if fade_ratio > 0.66:
-                print_color_text(term, self.symbol, self.x + 2, self.y, self.color, bold=True)
+                print_color_text(term, self.symbol, self.x + 2, self.y, self.color, bold=True, buffer=buffer)
             elif fade_ratio > 0.33:
-                print_color_text(term, self.symbol, self.x + 2, self.y, self.color)
+                print_color_text(term, self.symbol, self.x + 2, self.y, self.color, buffer=buffer)
             else:
-                print_color_text(term, self.symbol, self.x + 2, self.y, self.color, dim=True)
+                print_color_text(term, self.symbol, self.x + 2, self.y, self.color, dim=True, buffer=buffer)
 
 class Game:
 
@@ -79,11 +80,11 @@ class Game:
 
         self.user = self.game_memory.read('user')
     
-    def _draw_chest(self):
-        x, y = draw_ascii_art(self.term, CHEST, self.term.width // 2, self.term.height // 2, True)
+    def _draw_chest(self, buffer: list = None):
+        x, y = draw_ascii_art(self.term, CHEST, self.term.width // 2, self.term.height // 2, True, buffer=buffer)
         return x, y
 
-    def _draw_user_inventory(self, inventory: list[InventoryItem]):
+    def _draw_user_inventory(self, inventory: list[InventoryItem], buffer: list = None):
 
         def get_header(width: int):
             header = "Inventory"
@@ -119,17 +120,17 @@ class Game:
         inventory_print_rows.append(get_footer(inventory_width))
 
         for i, row in enumerate(inventory_print_rows, 1):
-            print_color_text(self.term, row, 0, i, 'white', dim=True)
+            print_color_text(self.term, row, 0, i, 'white', dim=True, buffer=buffer)
 
-    def _show_instructions(self):
+    def _show_instructions(self, buffer: list = None):
         instructions = "Press 'q' to quit. Press 's' to save game."
         
-        print_color_text(self.term, instructions, (self.term.width - len(instructions)) // 2, self.term.height - 2, 'white', dim=True)
+        print_color_text(self.term, instructions, (self.term.width - len(instructions)) // 2, self.term.height - 2, 'white', dim=True, buffer=buffer)
 
         sell_messsage = f"Press 'm' to get more money. Press 'c' to sell all inventory items."
-        print_color_text(self.term, sell_messsage, (self.term.width - len(sell_messsage)) // 2, self.term.height - 3, 'white', dim=True)
+        print_color_text(self.term, sell_messsage, (self.term.width - len(sell_messsage)) // 2, self.term.height - 3, 'white', dim=True, buffer=buffer)
 
-    def _draw_particles(self, particles: dict):
+    def _draw_particles(self, particles: dict, buffer: list = None):
         particles_to_remove = []
 
         for pid, particle in particles.items():
@@ -139,7 +140,7 @@ class Game:
                 particles_to_remove.append(pid)
                 continue
             
-            particle.draw(self.term)
+            particle.draw(self.term, buffer=buffer)
         
         for pid in particles_to_remove:
             del particles[pid]
@@ -181,11 +182,14 @@ class Game:
             frame = 0
             with self.term.cbreak():  # Input without Enter key
                 while True:
+                    # Create output buffer for this frame
+                    frame_buffer = []
+                    
                     # Clear screen
-                    print(self.term.home + self.term.clear)
+                    frame_buffer.append(self.term.home + self.term.clear)
                     
                     # Draw chest
-                    chest_x, chest_y = self._draw_chest()
+                    chest_x, chest_y = self._draw_chest(buffer=frame_buffer)
                     
                     # Update spawn timer
                     spawn_timer += 1
@@ -202,7 +206,7 @@ class Game:
                     # Update manual add cooldown timer
                     manual_add_timer += 1
                     
-                    money_particles = self._draw_particles(money_particles)
+                    money_particles = self._draw_particles(money_particles, buffer=frame_buffer)
 
                     for timer in money_timer:
                         timer['timer'] += 1
@@ -215,14 +219,14 @@ class Game:
                                     user.update_item_amount(item_type, 1)
                                     timer['timer'] = 0
 
-                    self._show_instructions()
+                    self._show_instructions(buffer=frame_buffer)
                     if self.show_inventory:
-                        self._draw_user_inventory(user.get_inventory())
+                        self._draw_user_inventory(user.get_inventory(), buffer=frame_buffer)
 
                     # Display money
                     current_money = f"You have {user.get_money_str()} coins"
 
-                    print_color_text(self.term, current_money, self.term.width // 2 - len(current_money) // 2, self.term.height // 2 + 2, 'white', bold=True)
+                    print_color_text(self.term, current_money, self.term.width // 2 - len(current_money) // 2, self.term.height // 2 + 2, 'white', bold=True, buffer=frame_buffer)
 
                     next_upgrade_currency = get_next_upgrade_currency(user.get_current_currency())
                     can_upgrade = False
@@ -234,11 +238,16 @@ class Game:
                         if can_upgrade:
                             next_upgrade_message = f"Press 'u' to upgrade to {next_upgrade_currency_name}"
                             
-                            print_color_text(self.term, next_upgrade_message, self.term.width // 2 - len(next_upgrade_message) // 2 , self.term.height // 2 + 3, 'yellow', bold=True)
+                            print_color_text(self.term, next_upgrade_message, self.term.width // 2 - len(next_upgrade_message) // 2 , self.term.height // 2 + 3, 'yellow', bold=True, buffer=frame_buffer)
                         
                     else:
                         next_upgrade_message = "There are no more upgrades available"
-                        print_color_text(self.term, next_upgrade_message, self.term.width // 2 - len(next_upgrade_message) // 2 , self.term.height // 2 + 2, 'white', dim=True)
+                        print_color_text(self.term, next_upgrade_message, self.term.width // 2 - len(next_upgrade_message) // 2 , self.term.height // 2 + 2, 'white', dim=True, buffer=frame_buffer)
+                    
+                    # Flush all buffered output at once
+                    for line in frame_buffer:
+                        print(line, end='', flush=False)
+                    sys.stdout.flush()
                     
                     frame += 1
 
@@ -263,8 +272,6 @@ class Game:
                             # Reset cooldown timer (only if not in debug mode)
                             if not self.debug:
                                 manual_add_timer = 0
-
-                            money_particles = self._draw_particles(money_particles)
 
                     elif key and key.lower() == 's':
                         self.game_memory.write('user', user)

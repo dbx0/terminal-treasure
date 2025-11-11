@@ -4,6 +4,7 @@ from core.utils import check_memory_file
 from core.utils import print_color_text
 from core.ascii import GAME_NAME
 from core.config import COLORS_RGB
+import sys
 class Menu:
 
     def __init__(self, term: Terminal):
@@ -51,7 +52,10 @@ class Menu:
             selected_item = 0
             with self.term.cbreak():
                 while True:
-                    print(self.term.home + self.term.clear)
+                    # Create output buffer for this frame
+                    import sys
+                    frame_buffer = []
+                    frame_buffer.append(self.term.home + self.term.clear)
                     
                     # Display ASCII game name in gold
                     game_name_lines = GAME_NAME.strip().split('\n')
@@ -61,21 +65,26 @@ class Menu:
                     for i, line in enumerate(game_name_lines):
                         ascii_start_x = self.term.width // 2 - len(line) // 2
                         colored_line = gold_color(line) + self.term.normal
-                        print(self.term.move_xy(ascii_start_x, ascii_start_y + i) + colored_line)
+                        frame_buffer.append(self.term.move_xy(ascii_start_x, ascii_start_y + i) + colored_line)
                     
                     # Display "a game by dbx0" in dim text below the game name
                     credit_text = "a game by dbx0"
                     credit_y = ascii_start_y + len(game_name_lines) + 1
                     credit_x = self.term.width // 2 - len(credit_text) // 2
-                    print_color_text(self.term, credit_text, credit_x, credit_y, 'light_yellow', dim=True)
+                    print_color_text(self.term, credit_text, credit_x, credit_y, 'light_yellow', dim=True, buffer=frame_buffer)
                     
                     for i, item in enumerate(menu_items):
                         if not item['enabled']:
-                            print_color_text(self.term, f"{i + 1}. {item['label']}", starting_position_x, self.term.height // 2 + i, item['color'], dim=True)
+                            print_color_text(self.term, f"{i + 1}. {item['label']}", starting_position_x, self.term.height // 2 + i, item['color'], dim=True, buffer=frame_buffer)
                         else:
-                            print_color_text(self.term, f"{i + 1}. {item['label']}", starting_position_x, self.term.height // 2 + i, item['color'])
+                            print_color_text(self.term, f"{i + 1}. {item['label']}", starting_position_x, self.term.height // 2 + i, item['color'], buffer=frame_buffer)
                         if i == selected_item:
-                            print_color_text(self.term, f"{i + 1}. {item['label']}", starting_position_x, self.term.height // 2 + i, item['selected_color'], bold=True)
+                            print_color_text(self.term, f"{i + 1}. {item['label']}", starting_position_x, self.term.height // 2 + i, item['selected_color'], bold=True, buffer=frame_buffer)
+                    
+                    # Flush all buffered output at once
+                    for line in frame_buffer:
+                        print(line, end='', flush=False)
+                    sys.stdout.flush()
                         
                     key = self.term.inkey(timeout=1/60)
                     if not key:

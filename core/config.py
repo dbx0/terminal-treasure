@@ -1,6 +1,6 @@
 CURRENCIES_CONFIG = [
     {
-        'type': 'coins',
+        'type': 'nickels',
         'order': 1,
         'add_amount': 1,
         'symbol': 'o',

@@ -6,6 +6,7 @@ from core.utils import draw_ascii_art, get_next_upgrade_currency, check_memory_f
 from core.utils import print_color_text, move_cursor_off_screen
 from core.ascii import CHEST
 import sys
+import random
 from core.particle import Particle
 from core.inventory import Inventory
 
@@ -69,13 +70,18 @@ class Game:
         for i, row in enumerate(inventory_print_rows, 1):
             print_color_text(self.term, row, 0, i, 'white', dim=True, buffer=buffer)
 
-    def _show_instructions(self, buffer: list = None):
+    def _show_instructions(self, star_exists: bool = False, buffer: list = None):
         instructions = "Press 'q' to quit. Press 's' to save game."
         
         print_color_text(self.term, instructions, (self.term.width - len(instructions)) // 2, self.term.height - 2, 'white', dim=True, buffer=buffer)
 
         sell_messsage = f"Press 'm' to get more money. Press 'c' to sell all inventory items."
         print_color_text(self.term, sell_messsage, (self.term.width - len(sell_messsage)) // 2, self.term.height - 3, 'white', dim=True, buffer=buffer)
+        
+        # Only show star message when a star exists
+        if star_exists:
+            star_message = "Press 'a' to collect the gold star!"
+            print_color_text(self.term, star_message, (self.term.width - len(star_message)) // 2, self.term.height - 4, 'yellow', dim=True, buffer=buffer)
 
     def _draw_particles(self, particles: dict, buffer: list = None):
         particles_to_remove = []
@@ -93,6 +99,9 @@ class Game:
             del particles[pid]
 
         return particles
+
+    def _draw_star(self, star_x: int, star_y: int, buffer: list = None):
+        print_color_text(self.term, '★', star_x, star_y, 'gold', bold=True, buffer=buffer)
 
     def run(self):
         user = None    
@@ -114,6 +123,12 @@ class Game:
         money_timer = []
         manual_add_timer = user.get_current_currency().get_add_rate()
 
+        star_exists = False
+        star_x = 0
+        star_y = 0
+        star_spawn_timer = 0
+
+        star_next_spawn_time = random.randint(1800, 3600)
 
         for item in user.get_inventory().get_items():
             if item.get_type() == 'currency':
@@ -153,6 +168,18 @@ class Game:
                     # Update manual add cooldown timer
                     manual_add_timer += 1
                     
+                    if not star_exists:
+                        star_spawn_timer += 1
+                        if star_spawn_timer >= star_next_spawn_time:
+                            # avoid edges
+                            star_x = random.randint(5, self.term.width - 5)
+                            star_y = random.randint(5, self.term.height - 5)
+                            star_exists = True
+                            star_spawn_timer = 0
+                    
+                    if star_exists:
+                        self._draw_star(star_x, star_y, buffer=frame_buffer)
+                    
                     money_particles = self._draw_particles(money_particles, buffer=frame_buffer)
 
                     for timer in money_timer:
@@ -167,7 +194,7 @@ class Game:
                                     user.update_item_amount(item_type, 1)
                                     timer['timer'] = 0
 
-                    self._show_instructions(buffer=frame_buffer)
+                    self._show_instructions(star_exists=star_exists, buffer=frame_buffer)
                     if self.show_inventory:
                         self._draw_user_inventory(user.get_inventory().get_items(), buffer=frame_buffer)
 
@@ -242,6 +269,26 @@ class Game:
                                 text_color='light_green'
                             )
                             money_particle_id += 1
+                    elif key and key.lower() == 'a':
+                        if star_exists:
+                            reward = user.get_current_currency().get_add_amount() * 50
+                            user.add_money(reward)
+                            user.increment_stars_collected()
+                            star_exists = False
+                            star_spawn_timer = 0
+                            star_next_spawn_time = random.randint(1800, 3600)
+                            
+                            reward_str = f"+ {reward:,.0f}" if reward >= 1 else f"+ {reward:,.2f}"
+                            money_particles[money_particle_id] = Particle(
+                                x=star_x,
+                                y=star_y,
+                                max_age=60,
+                                text=reward_str,
+                                text_color='gold'
+                            )
+                            money_particle_id += 1
+                            
+                            self.game_memory.write('user', user)
                         
                     if key and can_upgrade and key.lower() == 'u':
                         user.subtract_money(next_upgrade_currency_cost)

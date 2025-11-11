@@ -9,6 +9,7 @@ class User:
         self.inventory = Inventory()
         self.current_currency = get_currency_by_order(1)
         self.inventory.add_item(InventoryItem(self.current_currency, 0, 'currency'))
+        self.stars_collected = 0
 
 
     def get_money(self) -> int:
@@ -66,11 +67,18 @@ class User:
     def set_money(self, amount: int):
         self.money = amount
 
+    def get_stars_collected(self) -> int:
+        return self.stars_collected
+
+    def increment_stars_collected(self):
+        self.stars_collected += 1
+
     def to_dict(self) -> dict:
         return {
             'money': self.money,
             'inventory': [item.to_dict() for item in self.inventory.get_items()],
-            'current_currency': self.current_currency.to_dict()
+            'current_currency': self.current_currency.to_dict(),
+            'stars_collected': self.stars_collected
         }
     
     @classmethod
@@ -81,4 +89,5 @@ class User:
         for item in data['inventory']:
             user.inventory.add_item(InventoryItem.from_dict(item))
         user.current_currency = Currency.from_dict(data['current_currency'])
+        user.stars_collected = data.get('stars_collected', 0)
         return user

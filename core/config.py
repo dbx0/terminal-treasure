@@ -8,7 +8,9 @@ CURRENCIES_CONFIG = [
         'add_rate': 60, # 60 means 1 second
         'unlock_cost': 100,
         'upgrade_cost': 100,
-        'multiplier_rate': 0.20
+        'multiplier_rate': 0.20,
+        'current_level': 1,
+        'max_level': 10
     },
     {
         'type': 'gold bars',
@@ -19,7 +21,9 @@ CURRENCIES_CONFIG = [
         'add_rate': 50,
         'unlock_cost': 10000,
         'upgrade_cost': 10000,
-        'multiplier_rate': 0.10
+        'multiplier_rate': 0.10,
+        'current_level': 1,
+        'max_level': 10
     },
     {
         'type': 'diamonds',
@@ -30,7 +34,9 @@ CURRENCIES_CONFIG = [
         'add_rate': 40,
         'unlock_cost': 1000000,
         'upgrade_cost': 1000000,
-        'multiplier_rate': 0.05
+        'multiplier_rate': 0.05,
+        'current_level': 1,
+        'max_level': 10
     },
     {
         'type': 'platinum',
@@ -41,7 +47,9 @@ CURRENCIES_CONFIG = [
         'add_rate': 30,
         'unlock_cost': 100000000,
         'upgrade_cost': 100000000,
-        'multiplier_rate': 0.02
+        'multiplier_rate': 0.02,
+        'current_level': 1,
+        'max_level': 10
     },
     {
         'type': 'emeralds',
@@ -52,7 +60,9 @@ CURRENCIES_CONFIG = [
         'add_rate': 20,      
         'unlock_cost': 10000000000,
         'upgrade_cost': 10000000000,
-        'multiplier_rate': 0.01
+        'multiplier_rate': 0.01,
+        'current_level': 1,
+        'max_level': 10
     },
     {
         'type': 'rubies',
@@ -63,7 +73,9 @@ CURRENCIES_CONFIG = [
         'add_rate': 10,
         'unlock_cost': 1000000000000,
         'upgrade_cost': 1000000000000,
-        'multiplier_rate': 0.005
+        'multiplier_rate': 0.005,
+        'current_level': 1,
+        'max_level': 10
     },
     {
         'type': 'sapphires',
@@ -74,7 +86,9 @@ CURRENCIES_CONFIG = [
         'add_rate': 5,
         'unlock_cost': 100000000000000,
         'upgrade_cost': 100000000000000,
-        'multiplier_rate': 0.002
+        'multiplier_rate': 0.002,
+        'current_level': 1,
+        'max_level': 10
     },
     {
         'type': 'amethysts',
@@ -85,7 +99,9 @@ CURRENCIES_CONFIG = [
         'add_rate': 2,
         'unlock_cost': 10000000000000000,
         'upgrade_cost': 10000000000000000,
-        'multiplier_rate': 0.001
+        'multiplier_rate': 0.001,
+        'current_level': 1,
+        'max_level': 10
     }
 ]
 

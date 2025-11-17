@@ -54,6 +54,39 @@ def print_color_text(term: Terminal, text: str, x: int, y: int, color_name: str,
         print(output, end='', flush=False)
         sys.stdout.flush()
 
+def print_color_text_with_accent(term: Terminal, text: str, x: int, y: int, default_color: str, accent_color: str, accent_starting_char_position: int, accent_ending_char_position: int, dim: bool = False, bold: bool = False, buffer: list = None):
+
+    accent_color_rgb = COLORS_RGB[accent_color]
+    accent_color = term.color_rgb(*accent_color_rgb)
+
+    default_color_rgb = COLORS_RGB[default_color]
+    default_color = term.color_rgb(*default_color_rgb)
+
+    accent_starting_char_position = accent_starting_char_position - 1
+    accent_ending_char_position = accent_ending_char_position - 1
+
+    formatted_text = text
+    if dim:
+        try:
+            formatted_text = term.dim(formatted_text)
+        except Exception:
+            pass
+    if bold:
+        formatted_text = term.bold(formatted_text)
+
+    first_part = formatted_text[:accent_starting_char_position]
+    middle_part = formatted_text[accent_starting_char_position:accent_ending_char_position+1]
+    last_part = formatted_text[accent_ending_char_position+1:]
+
+    formatted_text = first_part + accent_color(middle_part) + last_part
+    output = term.move_xy(x, y) + formatted_text + term.normal
+
+    if buffer is not None:
+        buffer.append(output)
+    else:
+        print(output, end='', flush=False)
+        sys.stdout.flush()
+
 def get_currency_by_order(order: int) -> Currency:
     currencies = get_config_currencies()
     return next((currency for currency in currencies if currency.get_order() == order), None)

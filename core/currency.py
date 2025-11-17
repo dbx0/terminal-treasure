@@ -1,5 +1,5 @@
 class Currency: 
-    def __init__(self, type: str, order: int, add_amount: float, symbol: str, color: str, add_rate: int, unlock_cost: int, upgrade_cost: int, multiplier_rate: int):
+    def __init__(self, type: str, order: int, add_amount: float, symbol: str, color: str, add_rate: int, unlock_cost: int, upgrade_cost: int, multiplier_rate: int, current_level: int, max_level: int):
         self.type = type
         self.order = order
         self.add_amount = add_amount
@@ -9,6 +9,8 @@ class Currency:
         self.unlock_cost = unlock_cost
         self.upgrade_cost = upgrade_cost
         self.multiplier_rate = multiplier_rate
+        self.current_level = current_level
+        self.max_level = max_level
         
     def get_type(self) -> str:
         return self.type
@@ -37,9 +39,17 @@ class Currency:
     def upgrade_add_amount(self):
         self.add_amount += self.add_amount * self.multiplier_rate
         self.upgrade_cost += self.upgrade_cost * self.multiplier_rate
+        self.multiplier_rate = self.multiplier_rate * self.multiplier_rate
+        self.current_level += 1
 
     def get_multiplier_rate(self) -> int:
         return self.multiplier_rate
+    
+    def get_current_level(self) -> int:
+        return self.current_level
+    
+    def get_max_level(self) -> int:
+        return self.max_level
 
     def to_dict(self) -> dict:
         return {
@@ -51,7 +61,9 @@ class Currency:
             'add_rate': self.add_rate,
             'unlock_cost': self.unlock_cost,
             'upgrade_cost': self.upgrade_cost,
-            'multiplier_rate': self.multiplier_rate
+            'multiplier_rate': self.multiplier_rate,
+            'current_level': self.current_level,
+            'max_level': self.max_level
         }
     
     @classmethod
@@ -65,5 +77,7 @@ class Currency:
             add_rate=data['add_rate'],
             unlock_cost=data['unlock_cost'],
             upgrade_cost=data['upgrade_cost'],
-            multiplier_rate=data['multiplier_rate']
+            multiplier_rate=data['multiplier_rate'],
+            current_level=data['current_level'],
+            max_level=data['max_level']
         )

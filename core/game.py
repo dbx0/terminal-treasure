@@ -231,9 +231,10 @@ class Game:
                     print_color_text(self.term, current_money, self.term.width // 2 - len(current_money) // 2, self.term.height // 2 + 2, 'white', bold=True, buffer=frame_buffer)
 
                     next_unlockable_currency = get_next_unlockable_currency(user.get_current_currency())
-                    next_unlockable_currency_cost = next_unlockable_currency.get_unlock_cost()
+                    next_unlockable_currency_cost = 0
                     can_unlock = False
                     if next_unlockable_currency:
+                        next_unlockable_currency_cost = next_unlockable_currency.get_unlock_cost()
                         next_unlock_currency_name = next_unlockable_currency.get_type().capitalize()
                         can_unlock = user.get_money() >= next_unlockable_currency_cost
                         if can_unlock:
@@ -243,7 +244,7 @@ class Game:
                         
                     else:
                         next_upgrade_message = "There are no more upgrades available"
-                        print_color_text(self.term, next_upgrade_message, self.term.width // 2 - len(next_upgrade_message) // 2 , self.term.height // 2 + 2, 'red', dim=True, buffer=frame_buffer)
+                        print_color_text(self.term, next_upgrade_message, self.term.width // 2 - len(next_upgrade_message) // 2 , self.term.height // 2 + 3, 'red', dim=True, buffer=frame_buffer)
                     
                     # Flush all buffered output at once
                     for line in frame_buffer:

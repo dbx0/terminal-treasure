@@ -6,7 +6,9 @@ CURRENCIES_CONFIG = [
         'symbol': 'o',
         'color': 'yellow',
         'add_rate': 60, # 60 means 1 second
-        'upgrade_cost': 0
+        'unlock_cost': 100,
+        'upgrade_cost': 100,
+        'multiplier_rate': 0.20
     },
     {
         'type': 'gold bars',
@@ -15,7 +17,9 @@ CURRENCIES_CONFIG = [
         'symbol': '■',
         'color': 'gold',
         'add_rate': 50,
-        'upgrade_cost': 1000
+        'unlock_cost': 10000,
+        'upgrade_cost': 10000,
+        'multiplier_rate': 0.10
     },
     {
         'type': 'diamonds',
@@ -24,7 +28,9 @@ CURRENCIES_CONFIG = [
         'symbol': '♦',
         'color': 'light_blue',
         'add_rate': 40,
-        'upgrade_cost': 1000000
+        'unlock_cost': 1000000,
+        'upgrade_cost': 1000000,
+        'multiplier_rate': 0.05
     },
     {
         'type': 'platinum',
@@ -33,7 +39,9 @@ CURRENCIES_CONFIG = [
         'symbol': '♦',
         'color': 'white',
         'add_rate': 30,
-        'upgrade_cost': 100000000
+        'unlock_cost': 100000000,
+        'upgrade_cost': 100000000,
+        'multiplier_rate': 0.02
     },
     {
         'type': 'emeralds',
@@ -42,7 +50,9 @@ CURRENCIES_CONFIG = [
         'symbol': '♦',
         'color': 'green',
         'add_rate': 20,      
-        'upgrade_cost': 10000000000
+        'unlock_cost': 10000000000,
+        'upgrade_cost': 10000000000,
+        'multiplier_rate': 0.01
     },
     {
         'type': 'rubies',
@@ -51,7 +61,9 @@ CURRENCIES_CONFIG = [
         'symbol': '♦',
         'color': 'red',
         'add_rate': 10,
-        'upgrade_cost': 1000000000000
+        'unlock_cost': 1000000000000,
+        'upgrade_cost': 1000000000000,
+        'multiplier_rate': 0.005
     },
     {
         'type': 'sapphires',
@@ -60,7 +72,9 @@ CURRENCIES_CONFIG = [
         'symbol': '♦',
         'color': 'blue',
         'add_rate': 5,
-        'upgrade_cost': 100000000000000
+        'unlock_cost': 100000000000000,
+        'upgrade_cost': 100000000000000,
+        'multiplier_rate': 0.002
     },
     {
         'type': 'amethysts',
@@ -69,7 +83,9 @@ CURRENCIES_CONFIG = [
         'symbol': '♦',
         'color': 'purple',
         'add_rate': 2,
-        'upgrade_cost': 10000000000000000
+        'unlock_cost': 10000000000000000,
+        'upgrade_cost': 10000000000000000,
+        'multiplier_rate': 0.001
     }
 ]
 

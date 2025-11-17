@@ -62,6 +62,12 @@ class Inventory:
             'items': [item.to_dict() for item in self.get_items()]
         }
 
+    def find_item_by_type(self, item_type: str) -> InventoryItem:
+        for item in self.get_items():
+            if item.get_item().get_type() == item_type:
+                return item
+        return None
+    
     @classmethod
     def from_dict(cls, data: dict):
         inventory = cls()

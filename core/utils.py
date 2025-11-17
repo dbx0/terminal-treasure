@@ -58,7 +58,7 @@ def get_currency_by_order(order: int) -> Currency:
     currencies = get_config_currencies()
     return next((currency for currency in currencies if currency.get_order() == order), None)
 
-def get_next_upgrade_currency(current_currency: Currency) -> Currency:
+def get_next_unlockable_currency(current_currency: Currency) -> Currency:
     #get next number in the order list
     next_order = current_currency.get_order() + 1
     next_currency = next((currency for currency in get_config_currencies() if currency.get_order() == next_order), None)

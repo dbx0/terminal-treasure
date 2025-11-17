@@ -40,10 +40,10 @@ class User:
         self.current_currency = currency
 
     def update_item_amount(self, item_type: str, amount: int):
-        for item in self.inventory.get_items():
-            if item.get_item().get_type() == item_type:
-                item.add_amount(amount)
-                break
+        item = self.inventory.find_item_by_type(item_type)
+        if item:
+            item.add_amount(amount)
+            return
 
     def sell_currency_inventory_item(self, item: InventoryItem):
         self.add_money(item.get_amount() * item.get_item().get_add_amount() if item.get_item() else 0)
@@ -54,7 +54,7 @@ class User:
         for item in self.inventory.get_items():
             if item.get_type() == 'currency':
                 amount_before = item.get_amount()
-                self.sell_currency_inventory_item(item)
+                self.sell_currency_inventory_item(item) 
                 total_sold += amount_before * item.get_item().get_add_amount() if item.get_item() else 0
         return total_sold
 

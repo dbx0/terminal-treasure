@@ -2,7 +2,7 @@ from blessed import Terminal
 from core.user import User
 from core.user import InventoryItem
 from core.memory import GameMemory
-from core.utils import draw_ascii_art, get_next_upgrade_currency, check_memory_file
+from core.utils import draw_ascii_art, get_next_unlockable_currency, check_memory_file
 from core.utils import print_color_text, move_cursor_off_screen
 from core.ascii import CHEST
 import sys
@@ -32,7 +32,7 @@ class Game:
         x, y = draw_ascii_art(self.term, CHEST, self.term.width // 2, self.term.height // 2, True, buffer=buffer)
         return x, y
 
-    def _draw_user_inventory(self, inventory: Inventory, buffer: list = None):
+    def _draw_user_inventory(self, inventory: Inventory, selected_item: int, current_coins: int, buffer: list = None):
 
         def get_header(width: int):
             header = "Inventory"
@@ -48,27 +48,52 @@ class Game:
 
         inventory_print_rows = []
 
-        for i, item in enumerate(inventory):
+        for i, item in enumerate(inventory, start=1):
             item_symbol = item.get_item().get_symbol() if item.get_item() else '-'
             item_type = item.get_item().get_type().capitalize() if item.get_item() else 'Unknown'
-            item_amount = f"{item.get_amount()}" 
+            item_amount = f"{item.get_amount():,.2f}" 
 
             item_message = f"{item_symbol} {item_amount} {item_type}"
 
-            inventory_print_rows.append(item_message)
+            can_upgrade = item.get_item().get_upgrade_cost() <= current_coins
+
+            item_row = {
+                'message': item_message,
+                'color': 'light_green' if can_upgrade else 'white',
+                'selected': i == selected_item,
+            }
+
+            inventory_print_rows.append(item_row)
 
             if len(item_message) > inventory_width:
                 inventory_width = len(item_message)
 
-        for i, row in enumerate(inventory_print_rows):
-            spacing = inventory_width - len(row) - 2 
-            inventory_print_rows[i] = f"|" + " " * 2 + row + " " * (spacing - 2) + "|"
+        for row in inventory_print_rows:
+            spacing = inventory_width - len(row['message']) - 2 
+            row['message'] = f"|" + " " * 2 + row['message'] + " " * (spacing - 2) + "|"
 
-        inventory_print_rows.insert(0, get_header(inventory_width))
-        inventory_print_rows.append(get_footer(inventory_width))
+        header = {
+            'message': get_header(inventory_width),
+            'color': 'white',
+            'selected': False,
+        }
+        footer = {
+            'message': get_footer(inventory_width),
+            'color': 'white',
+            'selected': False,
+        }
+        inventory_print_rows.insert(0, header)
+        inventory_print_rows.append(footer)
 
-        for i, row in enumerate(inventory_print_rows, 1):
-            print_color_text(self.term, row, 0, i, 'white', dim=True, buffer=buffer)
+        row_position = 1
+        for row in inventory_print_rows:
+            if row['selected']:
+                message = f"> {row['message']}" 
+                print_color_text(self.term, message, 0, row_position, row['color'], bold=True, buffer=buffer)
+            else:
+                message = f"  {row['message']}"
+                print_color_text(self.term, message, 0, row_position, row['color'], dim=True,buffer=buffer)
+            row_position += 1
 
     def _show_instructions(self, star_exists: bool = False, buffer: list = None):
         instructions = "Press 'q' to quit. Press 's' to save game."
@@ -115,6 +140,8 @@ class Game:
             if user is None:
                 user = User()
                 self.game_memory.write('user', user)
+
+        selected_item = 1
 
         money_particles = {}
         money_particle_id = 0
@@ -191,29 +218,28 @@ class Game:
                             item_type = item.get_item().get_type()
                             if timer['item'] == item_type:
                                 if timer['timer'] >= item.get_item().get_add_rate():
-                                    user.update_item_amount(item_type, 1)
+                                    user.update_item_amount(item_type, item.get_item().get_add_amount())
                                     timer['timer'] = 0
 
                     self._show_instructions(star_exists=star_exists, buffer=frame_buffer)
                     if self.show_inventory:
-                        self._draw_user_inventory(user.get_inventory().get_items(), buffer=frame_buffer)
+                        self._draw_user_inventory(user.get_inventory().get_items(), selected_item, user.get_money(), buffer=frame_buffer)
 
                     # Display money
                     current_money = f"You have {user.get_money_str()} coins"
 
                     print_color_text(self.term, current_money, self.term.width // 2 - len(current_money) // 2, self.term.height // 2 + 2, 'white', bold=True, buffer=frame_buffer)
 
-                    next_upgrade_currency = get_next_upgrade_currency(user.get_current_currency())
-                    can_upgrade = False
-                    if next_upgrade_currency:
-                        next_upgrade_currency_name = next_upgrade_currency.get_type().capitalize()
-                        next_upgrade_currency_cost = next_upgrade_currency.get_upgrade_cost()
-
-                        can_upgrade = user.get_money() >= next_upgrade_currency_cost
-                        if can_upgrade:
-                            next_upgrade_message = f"Press 'u' to upgrade to {next_upgrade_currency_name}"
+                    next_unlockable_currency = get_next_unlockable_currency(user.get_current_currency())
+                    next_unlockable_currency_cost = next_unlockable_currency.get_unlock_cost()
+                    can_unlock = False
+                    if next_unlockable_currency:
+                        next_unlock_currency_name = next_unlockable_currency.get_type().capitalize()
+                        can_unlock = user.get_money() >= next_unlockable_currency_cost
+                        if can_unlock:
+                            next_unlock_message = f"Press 'u' to unlock {next_unlock_currency_name}"
                             
-                            print_color_text(self.term, next_upgrade_message, self.term.width // 2 - len(next_upgrade_message) // 2 , self.term.height // 2 + 3, 'yellow', bold=True, buffer=frame_buffer)
+                            print_color_text(self.term, next_unlock_message, self.term.width // 2 - len(next_unlock_message) // 2 , self.term.height // 2 + 3, 'yellow', bold=True, buffer=frame_buffer)
                         
                     else:
                         next_upgrade_message = "There are no more upgrades available"
@@ -290,14 +316,31 @@ class Game:
                             
                             self.game_memory.write('user', user)
                         
-                    if key and can_upgrade and key.lower() == 'u':
-                        user.subtract_money(next_upgrade_currency_cost)
-                        user.unlock_new_currency(next_upgrade_currency)
+                    elif key and can_unlock and key.lower() == 'u':
+                        user.subtract_money(next_unlockable_currency_cost)
+                        user.unlock_new_currency(next_unlockable_currency)
                         money_timer.append({
-                            'item': next_upgrade_currency.get_type(),
+                            'item': next_unlockable_currency.get_type(),
                             'timer': 0
                         })
                         self.game_memory.write('user', user)
+
+                    elif hasattr(key, 'name') and key.name == 'KEY_UP':
+                        if selected_item > 1:
+                            selected_item -= 1
+                    elif hasattr(key, 'name') and key.name == 'KEY_DOWN':
+                        if selected_item < len(user.get_inventory().get_items()):
+                            selected_item = min(selected_item + 1, len(user.get_inventory().get_items()))
+
+                    elif key and (key == '\r' or key == '\n' or (hasattr(key, 'code') and key.code == self.term.KEY_ENTER)):
+                        selected_item_item = user.get_inventory().get_items()[selected_item - 1]
+                        if selected_item_item.get_type() == 'currency':
+                            can_upgrade = selected_item_item.get_item().get_upgrade_cost() <= user.get_money()
+                            if can_upgrade:
+                                user.subtract_money(selected_item_item.get_item().get_upgrade_cost())
+                                selected_item_item.get_item().upgrade_add_amount()
+                                self.game_memory.write('user', user)
+                        
         finally:
             print(self.term.exit_fullscreen)
             print(self.term.normal_cursor)

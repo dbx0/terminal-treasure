@@ -146,17 +146,13 @@ class Game:
             ("q", "Quit game"),
             ("s", "Save game"),
             ("m", "Get money"),
+            ("a", "Collect star"),
+            ("u", "Unlock currency"),
             ("c", "Sell all items"),
             ("i", "Toggle instructions"),
             ("↑/↓", "Navigate inventory"),
             ("Enter", "Upgrade item"),
         ]
-
-        # Add conditional instructions
-        if star_exists:
-            instructions.append(("a", "Collect star"))
-        if can_unlock:
-            instructions.append(("u", "Unlock currency"))
 
         # Calculate box width
         box_width = 25

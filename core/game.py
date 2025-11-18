@@ -60,8 +60,8 @@ class Game:
             item_amount = f"{item.get_amount():,.0f}" 
             item_current_level = item.get_item().get_current_level()
             item_max_level = item.get_item().get_max_level()
-
-            item_message = f"{item_symbol} {item_amount} {item_type} ({item_current_level}/{item_max_level})"
+            level_indicator = f"Lv. {item_current_level}" if item_current_level < item_max_level else "MAX"
+            item_message = f"{item_symbol} {item_amount} {item_type} ({level_indicator})"
 
             can_upgrade = item.get_item().get_upgrade_cost() <= current_coins and item.get_item().get_current_level() < item.get_item().get_max_level()
 
